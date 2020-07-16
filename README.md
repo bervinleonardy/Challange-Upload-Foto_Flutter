@@ -1,6 +1,8 @@
-# challange_upload_foto
-
-A new Flutter application.
+# Challange Upload Foto - Versi Flutter
+Case :
+* Upload 5 Foto
+* Cek Konektifitas
+* Pop Up pending
 
 ## Getting Started
 

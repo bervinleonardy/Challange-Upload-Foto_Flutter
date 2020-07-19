@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android.iml" filepath="$PROJECT_DIR$/.idea/modules/android.iml" group="android" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="android/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/2128569269/connectivity.iml" filepath="$PROJECT_DIR$/.idea/modules/2128569269/connectivity.iml" group="android/connectivity" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1487118829/flutter_plugin_android_lifecycle.iml" filepath="$PROJECT_DIR$/.idea/modules/-1487118829/flutter_plugin_android_lifecycle.iml" group="android/flutter_plugin_android_lifecycle" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-882021215/image_picker.iml" filepath="$PROJECT_DIR$/.idea/modules/-882021215/image_picker.iml" group="android/image_picker" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1992860537/internet_speed_test.iml" filepath="$PROJECT_DIR$/.idea/modules/-1992860537/internet_speed_test.iml" group="android/internet_speed_test" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/1582730761/path_provider.iml" filepath="$PROJECT_DIR$/.idea/modules/1582730761/path_provider.iml" group="android/path_provider" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1799449116/shared_preferences.iml" filepath="$PROJECT_DIR$/.idea/modules/-1799449116/shared_preferences.iml" group="android/shared_preferences" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-2113930864/sqflite.iml" filepath="$PROJECT_DIR$/.idea/modules/-2113930864/sqflite.iml" group="android/sqflite" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/711967336/webview_flutter.iml" filepath="$PROJECT_DIR$/.idea/modules/711967336/webview_flutter.iml" group="android/webview_flutter" />
+    </modules>
+  </component>
+</project>

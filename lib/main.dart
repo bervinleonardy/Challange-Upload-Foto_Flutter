@@ -125,7 +125,7 @@ class _ImageInput extends State<ImageInput> {
   void _startUploading() async {
     final Map<String, dynamic> response = await _uploadImage(_imageFile);
     print(response);
-    if ( response == null ) {
+    if ( response != null && internetSpeedTest.uploadRate < 0.01) {
       Toast.show("Image Upload Failed!!!", context,
           duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
     } else {

@@ -31,6 +31,24 @@ dependencies:
   shared_preferences: ^0.5.0  # save the data in preferences.
   image_picker: ^0.6.0+3 # to select image from the gallery or camera.
   sqflite: ^1.1.3 # For Sqlite operations
+  path_provider: ^1.1.0
+#  http: "0.11.3+17"
+  http: "0.12.0+4"
+  dio: ^3.0.9
+  path: ^1.6.2
+  convert: ^2.1.1
+  autocomplete_textfield : ^1.6.4
+  webview_flutter : ^0.3.4
+  carousel_slider : ^1.3.0
+  sweetalert: any
+  connectivity: ^0.3.2
+  toast: ^0.1.5
+  mime: ^0.9.6+3
+  image: "^2.0.4"
+  async: ^2.4.1
+  internet_speed_test: ^1.1.2+1
+
+
 
 dev_dependencies:
   flutter_test:

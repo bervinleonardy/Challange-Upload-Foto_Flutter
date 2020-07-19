@@ -1,4 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:internet_speed_test/callbacks_enum.dart';
+import 'package:internet_speed_test/internet_speed_test.dart';
+import 'package:mime/mime.dart';
+import 'package:sweetalert/sweetalert.dart';
+import 'package:toast/toast.dart';
+
 
 void main() {
   runApp(MyApp());
@@ -9,109 +21,279 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+        title: 'Demo Upload Gambar',
+        theme: ThemeData(primarySwatch: Colors.pink),
+        home: ImageInput());
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class ImageInput extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<StatefulWidget> createState() {
+    return _ImageInput();
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _ImageInput extends State<ImageInput> {
+  final internetSpeedTest = InternetSpeedTest();
+  double downloadRate = 0;
+  double uploadRate = 0;
+  String downloadProgress = '0';
+  String uploadProgress = '0';
 
-  void _incrementCounter() {
+  String unitText = 'Mb/s';
+
+  // To store the file provided by the image_picker
+  File _imageFile;
+
+  // To track the file uploading state
+  bool _isUploading = false;
+
+  String baseUrl = 'https://buat-testing-ajah.000webhostapp.com/DemoflutterAPI/api.php';
+
+  void _getImage(BuildContext context, ImageSource source) async {
+    File image = await ImagePicker.pickImage(source: source);
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _imageFile = image;
     });
+
+    // Closes the bottom sheet
+    Navigator.pop(context);
+  }
+
+  Future<Map<String, dynamic>> _uploadImage(File image) async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    // Find the mime type of the selected file by looking at the header bytes of the file
+    final mimeTypeData =
+    lookupMimeType(image.path, headerBytes: [0xFF, 0xD8]).split('/');
+
+    // Intilize the multipart request
+    final imageUploadRequest =
+    http.MultipartRequest(
+        'POST',
+        Uri.parse(baseUrl)
+    );
+
+
+    // Attach the file in the request
+    final file = await http.MultipartFile.fromPath(
+      'image',
+      image.path,
+      contentType: MediaType(mimeTypeData[0],
+          mimeTypeData[1]),
+//        encoding: Encoding.getByName("utf-8")
+    );
+
+    // Explicitly pass the extension of the image with request body
+    // Since image_picker has some bugs due which it mixes up
+    // image extension with file name like this filenamejpge
+    // Which creates some problem at the server side to manage
+    // or verify the file extension
+    imageUploadRequest.fields['ext'] = mimeTypeData[1];
+//    imageUploadRequest.fields['name_en'] = 'fd';
+//    imageUploadRequest.fields['name_ar'] = 'fd';
+//    imageUploadRequest.fields['currency_code'] = 'dfv';
+//    imageUploadRequest.fields['mobile_digit_count'] = '4';
+//    imageUploadRequest.fields['mobile_code'] = 'sdf';
+    imageUploadRequest.files.add(file);
+
+    try {
+      final streamedResponse = await imageUploadRequest.send();
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 200) {
+         print('Gagal');
+         return null;
+      }
+
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      _resetState();
+
+      return responseData;
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  void _startUploading() async {
+    final Map<String, dynamic> response = await _uploadImage(_imageFile);
+    print(response);
+    if ( response == null ) {
+      Toast.show("Image Upload Failed!!!", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+    } else {
+      Toast.show("Image Uploaded Successfully!!!", context,
+          duration: Toast.LENGTH_LONG, gravity: Toast.BOTTOM);
+    }
+  }
+
+  void _resetState() {
+    setState(() {
+      _isUploading = false;
+      _imageFile = null;
+    });
+  }
+
+  void _openImagePickerModal(BuildContext context) {
+    final flatButtonColor = Theme.of(context).primaryColor;
+    print('Panggil Modal Picker Image');
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+            height: 150.0,
+            padding: EdgeInsets.all(10.0),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  'Ambil Gambar',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                  height: 10.0,
+                ),
+                FlatButton(
+                  textColor: flatButtonColor,
+                  child: Text('Kamera'),
+                  onPressed: () {
+                    _getImage(context, ImageSource.camera);
+                  },
+                ),
+                FlatButton(
+                  textColor: flatButtonColor,
+                  child: Text('Gallery'),
+                  onPressed: () {
+                    _getImage(context, ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          );
+        });
+  }
+
+  Widget _buildUploadBtn() {
+    Widget btnWidget = Container();
+
+    if (_isUploading) {
+      // File is being uploaded then show a progress indicator
+      btnWidget = Container(
+        margin: EdgeInsets.only(top: 10.0),
+        child: CircularProgressIndicator(),
+      );
+    } else if (!_isUploading && _imageFile != null) {
+      // If image is picked by the user then show a upload btn
+
+      btnWidget = Container(
+        margin: EdgeInsets.only(top: 10.0),
+        child: RaisedButton(
+          child: Text('Upload'),
+          onPressed: () {
+            _startUploading();
+            internetSpeedTest.startUploadTesting(
+                onDone: (double transferRate, SpeedUnit unit) {
+                  print('the transfer rate $transferRate');
+                  setState(() {
+                    uploadRate = transferRate;
+                    unitText = unit == SpeedUnit.Kbps ? 'Kb/s' : 'Mb/s';
+                    uploadProgress = '100';
+                    if (uploadProgress == '100'){
+                      SweetAlert.show(context,
+                          title: "Berhasil !",
+                          subtitle: "Gambar selesai di upload ke server",
+                          style: SweetAlertStyle.success);
+                    }
+                  });
+                },
+                onProgress:
+                    (double percent, double transferRate, SpeedUnit unit) {
+                  print('the transfer rate $transferRate, the percent $percent');
+                  setState(() {
+                    uploadRate = transferRate;
+                    unitText = unit == SpeedUnit.Kbps ? 'Kb/s' : 'Mb/s';
+                    uploadProgress = percent.toStringAsFixed(2);
+                    print(transferRate*1000);
+                    if (transferRate*1000 < 5 ){
+                      SweetAlert.show(context,
+                          title: "Peringatan !",
+                          subtitle: "Pastikan koneksi internet anda stabil ",
+                          style: SweetAlertStyle.confirm,
+                          // ignore: missing_return
+                          showCancelButton: true, onPress: (bool isConfirm) {
+                            if (isConfirm) {
+                              SweetAlert.show(context,style: SweetAlertStyle.success,title: "Success");
+                              // return false to keep dialog
+                            return false;
+                            }
+                          });
+                    }
+                  });
+                },
+                onError: (String errorMessage, String speedTestError) {
+                  print('the errorMessage $errorMessage, the speedTestError $speedTestError');
+                  SweetAlert.show(context,
+                      title: "Oops !",
+                      subtitle: "Sepertinya terjadi kesalahan",
+                      style: SweetAlertStyle.error);
+                }
+                );
+          },
+          color: Colors.pinkAccent,
+          textColor: Colors.white,
+        ),
+      );
+    }
+
+    return btnWidget;
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Demo Upload Gambar'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+      body: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(top: 40.0, left: 10.0, right: 10.0),
+            child: OutlineButton(
+              onPressed: () => _openImagePickerModal(context),
+              borderSide:
+              BorderSide(color: Theme.of(context).accentColor, width: 1.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(Icons.camera_alt),
+                  SizedBox(
+                    width: 5.0,
+                  ),
+                  Text('Tambah Gambar'),
+                ],
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+          ),
+          _imageFile == null
+              ? Text('Silakan Pilih Gambar')
+              : Image.file(
+            _imageFile,
+            fit: BoxFit.cover,
+            height: 300.0,
+            alignment: Alignment.topCenter,
+            width: MediaQuery.of(context).size.width,
+          ),
+          Text('Progress Upload $uploadProgress%'),
+          Text('Upload rate  $uploadRate Kb/s'),
+          _buildUploadBtn(),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
